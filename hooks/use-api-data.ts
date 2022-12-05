@@ -1,19 +1,31 @@
-import axios from 'axios'
-import { useEffect, useState } from 'react'
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
 
-export const useApiData = <T>(path: string, defaultValue: any, dependencies = []): T => {
-  const [data, setData] = useState<T>(defaultValue)
-
+export const useApiData = <T>(
+  path: string,
+  defaultValue: any,
+  dependencies = [],
+  debounceDuration = 200
+): T => {
+  const [data, setData] = useState<T>(defaultValue);
+  const timerId = useRef(null);
   useEffect(() => {
-    axios
-      .get<T>(path)
-      .catch((err) => err.response)
-      .then((response) => {
-        setData(response.data)
-      })
-  }, dependencies)
+    clearTimeout(timerId.current);
+    timerId.current = setTimeout(() => {
+      axios
+        .get<T>(path)
+        .catch((err) => err.response)
+        .then((response) => {
+          setData(response.data);
+        });
+    }, debounceDuration);
 
-  return data
-}
+    return () => {
+      clearTimeout(timerId.current);
+    };
+  }, dependencies);
 
-export default useApiData
+  return data;
+};
+
+export default useApiData;
